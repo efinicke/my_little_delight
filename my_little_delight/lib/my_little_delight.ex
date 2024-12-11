@@ -1,5 +1,13 @@
+
+# Charger les variables d'environnement dès le début
+Dotenv.load()
+
+
 defmodule MyLittleDelight do
-  @moduledoc """
+
+
+  
+ @moduledoc """
   Documentation for `MyLittleDelight`.
   """
 
@@ -14,5 +22,18 @@ defmodule MyLittleDelight do
   """
   def hello do
     :world
+  end
+
+
+  @doc """
+  Test function to verify the setup.
+
+  ## Examples
+
+      iex> MyLittleDelight.hello_test()
+      "Hello, Elixir!"
+  """
+  def hello_test do
+    "Hello, Elixir!"
   end
 end

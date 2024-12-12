@@ -1,55 +1,72 @@
 defmodule MyLittleDelight.SpotifyAuth do
-  @moduledoc """
-  Module pour gérer l'authentification avec l'API Spotify.
-  """
+  alias Cachex
 
-  # Fonction pour obtenir un access token de Spotify
+  @cache_name :spotify_cache
+
+  # Récupérer le token d'accès depuis le cache ou le générer s'il est absent ou expiré
   def get_access_token do
+    case Cachex.get(@cache_name, :access_token) do
+      {:ok, nil} ->
+        IO.puts("Token non trouvé dans le cache, génération d'un nouveau token.")
+        fetch_and_store_token()
+      {:ok, token} ->
+        IO.puts("Token trouvé dans le cache.")
+        {:ok, token}
+      {:error, reason} ->
+        IO.inspect(reason, label: "Erreur du cache")
+        fetch_and_store_token()
+    end
+  end
+
+  # Récupérer la durée de validité restante du token dans le cache, en secondes
+  def get_token_expiry do
+    case Cachex.ttl(@cache_name, :access_token) do
+      {:ok, nil} ->
+        {:error, "Aucun token n'est actuellement stocké."}
+      {:ok, ttl_ms} ->
+        ttl_seconds = div(ttl_ms, 1000) # Convertir millisecondes en secondes
+        IO.puts("Durée de validité du token : #{ttl_seconds} secondes")
+        {:ok, ttl_seconds}
+      {:error, reason} ->
+        {:error, "Erreur lors de la récupération de la durée de validité: #{inspect(reason)}"}
+    end
+  end
+
+  # Fonction privée pour récupérer un nouveau token et le stocker dans le cache
+  defp fetch_and_store_token do
     client_id = System.get_env("SPOTIFY_CLIENT_ID") |> String.trim()
     client_secret = System.get_env("SPOTIFY_CLIENT_SECRET") |> String.trim()
-    redirect_uri = System.get_env("SPOTIFY_REDIRECT_URI") |> String.trim()
 
-    IO.inspect(client_id, label: "client_id")
-    IO.inspect(client_secret, label: "client_secret")
-    IO.inspect(redirect_uri, label: "redirect_uri")
-
-    if client_id == "" or client_secret == "" or redirect_uri == "" do
+    if client_id == "" or client_secret == "" do
       {:error, "Variables d'environnement manquantes"}
     else
-      # L'URL d'authentification de Spotify
       url = "https://accounts.spotify.com/api/token"
-
-      # Paramètres pour la requête
-      body = URI.encode_query(%{
-        "grant_type" => "client_credentials"
-      })
-
-      # Créer l'en-tête d'authentification en Base64
+      body = URI.encode_query(%{ "grant_type" => "client_credentials" })
       auth_header = Base.encode64("#{client_id}:#{client_secret}")
 
-      # Effectuer la requête HTTP POST pour récupérer le token
       headers = [
         {"Authorization", "Basic #{auth_header}"},
         {"Content-Type", "application/x-www-form-urlencoded"}
       ]
 
-      IO.inspect(headers, label: "Request headers")
-
-      # Effectuer la requête HTTP
       case HTTPoison.post(url, body, headers) do
-        {:ok, response} ->
-          IO.inspect(response, label: "Response")
-          case Jason.decode(response.body) do
-            {:ok, %{"access_token" => token}} ->
+        {:ok, %{status_code: 200, body: body}} ->
+          case Jason.decode(body) do
+            {:ok, %{"access_token" => token, "expires_in" => expires_in}} ->
+              adjusted_ttl = max(expires_in - 10, 0)
+              Cachex.put(@cache_name, :access_token, token, ttl: :timer.seconds(adjusted_ttl))
+              IO.puts("Durée de validité du token : #{adjusted_ttl} secondes")
               {:ok, token}
 
             _ ->
-              {:error, "Erreur lors de la récupération du token"}
+              {:error, "Erreur lors de la décodification de la réponse de l'API Spotify"}
           end
 
+        {:ok, %{status_code: status}} ->
+          {:error, "Erreur de l'API Spotify: statut #{status}"}
+
         {:error, reason} ->
-          IO.inspect(reason, label: "Request error")
-          {:error, "Erreur lors de la requête"}
+          {:error, "Erreur de connexion à l'API Spotify: #{inspect(reason)}"}
       end
     end
   end

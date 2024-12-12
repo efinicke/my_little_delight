@@ -1,39 +1,25 @@
-
-# Charger les variables d'environnement dès le début
-Dotenv.load()
-
-
 defmodule MyLittleDelight do
+  use Application
 
+  # Cette fonction est appelée lors du démarrage de l'application
+  def start(_type, _args) do
+    IO.puts("Démarrage de l'application MyLittleDelight")
 
-  
- @moduledoc """
-  Documentation for `MyLittleDelight`.
-  """
+    # Démarrer le cache avec Cachex
+    children = [
+      {MyLittleDelight.Cache, []}
+    ]
 
-  @doc """
-  Hello world.
+    opts = [strategy: :one_for_one, name: MyLittleDelight.Supervisor]
 
-  ## Examples
+    # Lancer le superviseur
+    case Supervisor.start_link(children, opts) do
+      {:ok, pid} ->  # Utilisation correcte de la variable pid
+        {:ok, pid}  # Retourne le bon format que le superviseur attend
 
-      iex> MyLittleDelight.hello()
-      :world
-
-  """
-  def hello do
-    :world
-  end
-
-
-  @doc """
-  Test function to verify the setup.
-
-  ## Examples
-
-      iex> MyLittleDelight.hello_test()
-      "Hello, Elixir!"
-  """
-  def hello_test do
-    "Hello, Elixir!"
+      {:error, reason} ->
+        IO.puts("Erreur lors du démarrage de l'application: #{inspect(reason)}")  # Affiche l'erreur
+        {:error, reason}  # Retourne l'erreur attendue
+    end
   end
 end

@@ -43,12 +43,10 @@ defmodule MyLittleDelight.SpotifyAuth do
       url = "https://accounts.spotify.com/api/token"
       body = URI.encode_query(%{ "grant_type" => "client_credentials" })
       auth_header = Base.encode64("#{client_id}:#{client_secret}")
-
       headers = [
         {"Authorization", "Basic #{auth_header}"},
         {"Content-Type", "application/x-www-form-urlencoded"}
       ]
-
       case HTTPoison.post(url, body, headers) do
         {:ok, %{status_code: 200, body: body}} ->
           case Jason.decode(body) do
@@ -57,14 +55,11 @@ defmodule MyLittleDelight.SpotifyAuth do
               Cachex.put(@cache_name, :access_token, token, ttl: :timer.seconds(adjusted_ttl))
               IO.puts("Durée de validité du token : #{adjusted_ttl} secondes")
               {:ok, token}
-
             _ ->
               {:error, "Erreur lors de la décodification de la réponse de l'API Spotify"}
           end
-
         {:ok, %{status_code: status}} ->
           {:error, "Erreur de l'API Spotify: statut #{status}"}
-
         {:error, reason} ->
           {:error, "Erreur de connexion à l'API Spotify: #{inspect(reason)}"}
       end

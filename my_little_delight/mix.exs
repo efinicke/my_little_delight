@@ -23,9 +23,10 @@ defmodule MyLittleDelight.MixProject do
     [
       {:httpoison, "~> 1.8"},
       {:jason, "~> 1.2"},
-      {:mix_test_watch, "~> 1.1", only: :dev, runtime: false},
       {:dotenv, "~> 3.0"},
       {:cachex, "~> 3.3"},
+      {:mix_test_watch, "~> 1.1", only: :dev, runtime: false},
+      {:mox, "~> 1.2.0", only: :test},
     ]
   end
 end

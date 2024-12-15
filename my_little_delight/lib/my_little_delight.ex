@@ -9,7 +9,6 @@ defmodule MyLittleDelight do
     children = [
       {MyLittleDelight.Cache, []}
     ]
-
     opts = [strategy: :one_for_one, name: MyLittleDelight.Supervisor]
 
     # Lancer le superviseur
@@ -18,8 +17,8 @@ defmodule MyLittleDelight do
         {:ok, pid}  # Retourne le bon format que le superviseur attend
 
       {:error, reason} ->
-        IO.puts("Erreur lors du démarrage de l'application: #{inspect(reason)}")  # Affiche l'erreur
-        {:error, reason}  # Retourne l'erreur attendue
+        IO.puts("Erreur lors du démarrage de l'application: #{inspect(reason)}")
+        {:error, reason}
     end
   end
 end

@@ -20,7 +20,6 @@ defmodule MyLittleDelight.Cache do
 
   # Callbacks du GenServer
   def init(_args) do
-    IO.puts("Cache initialisé")  # Message affiché quand le cache est initialisé
-    {:ok, %{}}
+    IO.puts("Cache initialisé")
   end
 end
